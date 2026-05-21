@@ -9,9 +9,9 @@ use core::fmt;
 use core::str;
 use core::str::FromStr;
 
+use crate::Rgba8;
 use crate::{
     AlphaColor, ColorSpace, ColorSpaceTag, DynamicColor, Flags, Missing, OpaqueColor, PremulColor,
-    Srgb,
 };
 
 // TODO: maybe include string offset
@@ -508,7 +508,7 @@ pub fn parse_color_prefix(s: &str) -> Result<(usize, DynamicColor), ParseError> 
 
     if let Some(stripped) = s.strip_prefix('#') {
         let (ix, channels) = get_4bit_hex_channels(stripped)?;
-        let color = color_from_4bit_hex(channels);
+        let color = rgba_from_4bit_hex(channels).into();
         // Hex colors are seen as if they are generated from the named `rgb()` color space
         // function.
         let mut color = DynamicColor::from_alpha_color(color);
@@ -616,7 +616,7 @@ impl<CS: ColorSpace> FromStr for PremulColor<CS> {
 ///
 /// Returns the parsed channels and the byte offset to the remainder of the string (i.e., the
 /// number of hex characters parsed).
-const fn get_4bit_hex_channels(hex_str: &str) -> Result<(usize, [u8; 8]), ParseError> {
+pub(crate) const fn get_4bit_hex_channels(hex_str: &str) -> Result<(usize, [u8; 8]), ParseError> {
     let mut hex = [0; 8];
 
     let mut i = 0;
@@ -651,14 +651,14 @@ const fn hex_from_ascii_byte(b: u8) -> Result<u8, ()> {
     }
 }
 
-const fn color_from_4bit_hex(components: [u8; 8]) -> AlphaColor<Srgb> {
+pub(crate) const fn rgba_from_4bit_hex(components: [u8; 8]) -> Rgba8 {
     let [r0, r1, g0, g1, b0, b1, a0, a1] = components;
-    AlphaColor::from_rgba8(
-        (r0 << 4) | r1,
-        (g0 << 4) | g1,
-        (b0 << 4) | b1,
-        (a0 << 4) | a1,
-    )
+    Rgba8 {
+        r: (r0 << 4) | r1,
+        g: (g0 << 4) | g1,
+        b: (b0 << 4) | b1,
+        a: (a0 << 4) | a1,
+    }
 }
 
 impl FromStr for ColorSpaceTag {
